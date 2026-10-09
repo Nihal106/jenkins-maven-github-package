@@ -1,10 +1,12 @@
 pipeline {
-    agent any
+    agent {
+        label 'linux-maven-agent'
+    }
 
     environment {
-        GITHUB_CREDS = credentials('github-cred')
-        JAVA_HOME    = tool name: 'jdk21'
-        MAVEN_HOME   = tool name: 'maven3'
+        GITHUB_CREDS = credentials('github-packages-cred')
+        JAVA_HOME    = tool 'jdk11'
+        MAVEN_HOME   = tool 'maven3'
         PATH         = "${JAVA_HOME}/bin:${PATH}"
     }
 
@@ -16,16 +18,48 @@ pipeline {
             }
         }
 
+        stage('Verify Environment') {
+            steps {
+                sh '''
+                    echo "Running on EC2 Linux Agent"
+                    hostname
+                    whoami
+
+                    echo "Java version:"
+                    java -version
+
+                    echo "Maven version:"
+                    "$MAVEN_HOME/bin/mvn" -version
+                '''
+            }
+        }
+
         stage('Build & Deploy') {
             steps {
-                configFileProvider([configFile(fileId: 'maven-github-settings', variable: 'MAVEN_SETTINGS')]) {
-                    sh """
-                        export GH_USER=${GITHUB_CREDS_USR}
-                        export GH_TOKEN=${GITHUB_CREDS_PSW}
+                configFileProvider([
+                    configFile(
+                        fileId: 'maven-github-settings',
+                        variable: 'MAVEN_SETTINGS'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
 
-                        ${MAVEN_HOME}/bin/mvn -s $MAVEN_SETTINGS -B clean package
-                        ${MAVEN_HOME}/bin/mvn -s $MAVEN_SETTINGS -B deploy
-                    """
+                        export GH_USER="$GITHUB_CREDS_USR"
+                        export GH_TOKEN="$GITHUB_CREDS_PSW"
+
+                        echo "Building Maven project..."
+
+                        "$MAVEN_HOME/bin/mvn" \
+                            -s "$MAVEN_SETTINGS" \
+                            -B clean package
+
+                        echo "Deploying artifact to GitHub Packages..."
+
+                        "$MAVEN_HOME/bin/mvn" \
+                            -s "$MAVEN_SETTINGS" \
+                            -B deploy
+                    '''
                 }
             }
         }
@@ -33,10 +67,15 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build and deployment to GitHub Packages completed successfully."
+            echo 'Build and deployment to GitHub Packages completed successfully.'
         }
+
         failure {
-            echo "❌ Pipeline failed. Check the console output for details."
+            echo 'Pipeline failed. Check the console output for details.'
+        }
+
+        always {
+            echo 'Pipeline execution finished.'
         }
     }
 }
