@@ -2,6 +2,9 @@ pipeline {
     agent {
         label 'linux-maven-agent'
     }
+        options {
+        skipDefaultCheckout(true)
+    }
 
     environment {
         GITHUB_CREDS = credentials('github-package-creds')
