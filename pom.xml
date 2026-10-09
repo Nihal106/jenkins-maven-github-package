@@ -2,7 +2,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.nihal1</groupId>
+    <groupId>com.nihal2</groupId>
     <artifactId>jenkins-demo</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
