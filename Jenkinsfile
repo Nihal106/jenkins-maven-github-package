@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         GITHUB_CREDS = credentials('github-cred')
-        JAVA_HOME    = tool name: 'jdk11'
+        JAVA_HOME    = tool name: 'jdk21'
         MAVEN_HOME   = tool name: 'maven3'
         PATH         = "${JAVA_HOME}/bin:${PATH}"
     }
